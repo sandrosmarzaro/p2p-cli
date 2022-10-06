@@ -1,6 +1,7 @@
 import socket
 import _thread
 import os
+import sys
 import json
 import logging
 
@@ -19,24 +20,8 @@ class Node:
     def __init__(self, udp):
         self.SOCKET = udp
         self.PORT = 12345
-        self.IP = self.__try_get_ip()
+        self.IP = sys.argv[1]
         self.ID = hash(self.IP)
-
-    def __try_get_ip(self):
-        global ip
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        try:
-            ip = socket.gethostbyname(socket.gethostname())
-            if ip.startswith("127."):
-                s.connect(("1.1.1.1", 80))
-                ip = s.getsockname()[0]
-            if ip is None:
-                raise Exception("IP not found")
-        except:
-            ip = "127.0.0.1"
-        finally:
-            s.close()
-            return ip
 
 
 def listener(node):
@@ -109,5 +94,13 @@ def main():
     menu(node)
 
 
-if __name__ == "__main__":
+def validate_ip():
+    if len(sys.argv) != 2:
+        clear_console()
+        print("Invalid arguments! Usage: python3 node.py <IP>")
+        exit(1)
     main()
+
+
+if __name__ == "__main__":
+    validate_ip()
