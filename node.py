@@ -1,3 +1,5 @@
+#!/usr/sbin/python3
+
 import socket
 import _thread
 import os
@@ -13,6 +15,7 @@ class Node:
     SOCKET = None
     PORT = None
     IP = None
+    NAME = None
     ID = None
     previous = None
     next = None
@@ -21,7 +24,8 @@ class Node:
         self.SOCKET = udp
         self.PORT = 12345
         self.IP = sys.argv[1]
-        self.ID = hash(self.IP)
+        self.NAME = sys.argv[2]
+        self.ID = hash(self.IP + self.NAME)
 
 
 def listener(node):
@@ -36,21 +40,28 @@ def menu(node):
         clear_console()
         print("Select an option:")
         print_lines(50)
-        print("1 - Join")
-        print("2 - Leave")
-        print("3 - Lookup")
-        print("4 - Update")
-        print("5 - Exit")
+        print("1 - Join Network")
+        print("2 - Leave Network")
+        print("3 - Lookup Node")
+        print("4 - Update Node")
+        print("5 - Node Info")
+        print("0 - Exit Program")
         print_lines(50)
         option = int(input("Option: "))
-        switcher = {
-            1: join(),
-            2: leave(),
-            3: lookup(),
-            4: update(),
-            5: exit_()
-        }
-        switcher.get(option, "Invalid option")
+        if option == 1:
+            join()
+        elif option == 2:
+            leave()
+        elif option == 3:
+            lookup()
+        elif option == 4:
+            update()
+        elif option == 5:
+            node_info(node)
+        elif option == 0:
+            exit_()
+        else:
+            invalid_option()
 
 
 def join():
@@ -69,10 +80,24 @@ def update():
     pass
 
 
+def node_info(node):
+    clear_console()
+    print_lines(50)
+    print(f"Port: {node.PORT}")
+    print(f"IP: {node.IP}")
+    print(f"Name: {node.NAME}")
+    print(f"ID: {node.ID}")
+    print_lines(50)
+    input("Press enter to continue...")
+
+
 def exit_():
     clear_console()
+    print_lines(50)
     print("Exiting...")
     leave()
+    print_lines(50)
+    input("Press enter to continue...")
     clear_console()
     exit(0)
 
@@ -85,19 +110,27 @@ def print_lines(lines):
     print("-" * lines)
 
 
+def invalid_option():
+    clear_console()
+    print_lines(50)
+    print("Invalid option!")
+    print_lines(50)
+    input("Press enter to continue...")
+
+
 def main():
     udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     logging.info("Socket created")
     node = Node(udp)
-    logging.debug(f"Node IP: {node.IP}, PORT: {node.PORT}, ID: {node.ID}")
+    logging.debug(f"Node IP: {node.IP}, NAME: {node.NAME}, PORT: {node.PORT}, ID: {node.ID}")
     _thread.start_new_thread(listener, (node,))
     menu(node)
 
 
 def validate_ip():
-    if len(sys.argv) != 2:
+    if len(sys.argv) != 3:
         clear_console()
-        print("Invalid arguments! Usage: python3 node.py <IP>")
+        print("Invalid arguments! Usage: python3 node.py <IP> <NAME>")
         exit(1)
     main()
 
