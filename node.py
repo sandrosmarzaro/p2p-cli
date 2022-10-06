@@ -6,6 +6,7 @@ import os
 import sys
 import json
 import logging
+from traceback import print_tb
 
 logging.basicConfig(filename='node.log', level=logging.DEBUG,
                     format='%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s')
@@ -49,7 +50,7 @@ def menu(node):
         print_lines(50)
         option = int(input("Option: "))
         if option == 1:
-            join()
+            join(node)
         elif option == 2:
             leave()
         elif option == 3:
@@ -64,8 +65,14 @@ def menu(node):
             invalid_option()
 
 
-def join():
-    pass
+def join(node):
+    node.previous = node.IP
+    node.next = node.IP
+    clear_console()
+    print_lines(50)
+    print("Network Created!")
+    print_lines(50)
+    input("Press enter to continue...")
 
 
 def leave():
@@ -87,6 +94,8 @@ def node_info(node):
     print(f"IP: {node.IP}")
     print(f"Name: {node.NAME}")
     print(f"ID: {node.ID}")
+    print(f"Previous: {node.previous}")
+    print(f"Next: {node.next}")
     print_lines(50)
     input("Press enter to continue...")
 
@@ -122,7 +131,7 @@ def main():
     udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     logging.info("Socket created")
     node = Node(udp)
-    logging.debug(f"Node IP: {node.IP}, NAME: {node.NAME}, PORT: {node.PORT}, ID: {node.ID}")
+    logging.debug(f"Node IP: {node.IP}, NAME: {node.NAME}, PORT: {node.PORT}, ID: {node.ID}, previous: {node.previous}, next: {node.next}")
     _thread.start_new_thread(listener, (node,))
     menu(node)
 
