@@ -6,7 +6,6 @@ import os
 import sys
 import json
 import logging
-from traceback import print_tb
 
 logging.basicConfig(filename='node.log', level=logging.DEBUG,
                     format='%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s')
@@ -34,6 +33,25 @@ def listener(node):
     node.SOCKET.bind(orig)
     while True:
         msg, client = node.SOCKET.recvfrom(1024)
+        msg_decoded = msg.decode("utf-8")
+        logging.debug(f"Message received: {msg_decoded}")
+        string_dict = json.loads(msg_decoded)
+        if string_dict["codigo"] == 0:
+            pass
+        elif string_dict["codigo"] == 1:
+            pass
+        elif string_dict["codigo"] == 2:
+            pass
+        elif string_dict["codigo"] == 3:
+            pass
+        elif string_dict["codigo"] == 64:
+            pass
+        elif string_dict["codigo"] == 65:
+            pass
+        elif string_dict["codigo"] == 66:
+            pass
+        elif string_dict["codigo"] == 67:
+            pass
 
 
 def menu(node):
@@ -131,7 +149,8 @@ def main():
     udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     logging.info("Socket created")
     node = Node(udp)
-    logging.debug(f"Node IP: {node.IP}, NAME: {node.NAME}, PORT: {node.PORT}, ID: {node.ID}, previous: {node.previous}, next: {node.next}")
+    logging.debug(f"Node IP: {node.IP}, NAME: {node.NAME}, PORT: {node.PORT}, ID: {node.ID}, previous: {node.previous},"
+                  f" next: {node.next}")
     _thread.start_new_thread(listener, (node,))
     menu(node)
 
