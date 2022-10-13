@@ -41,7 +41,7 @@ def listener(node):
         elif string_dict["codigo"] == 1:
             pass
         elif string_dict["codigo"] == 2:
-            pass
+            lookup(node, string_dict["id_busca"])
         elif string_dict["codigo"] == 3:
             pass
         elif string_dict["codigo"] == 64:
@@ -93,15 +93,44 @@ def create_network(node):
 
 
 def join_network(node):
-    pass
+    clear_console()
+    print_lines(50)
+    print("Enter the IP of the node you want to join")
+    print_lines(50)
+    ip_to_join = input("IP: ")
+    msg_lookup = {
+        "codigo": 2,
+        "identificador": node.ID,
+        "ip_origem_busca": ip_to_join,
+        "id_busca": node.ID
+    }
+    msg_lookup_json = json.dumps(msg_lookup)
+    msg_lookup_encoded = msg_lookup_json.encode("utf-8")
+    node.SOCKET.sendto(msg_lookup_encoded, (ip_to_join, Node.PORT))
+    logging.debug(f"Lookup message -  {msg_lookup_encoded}")
 
 
 def leave_network(node):
     pass
 
 
-def lookup():
-    pass
+def lookup(node, insert_id):
+    actual_id = node.ID
+    while True:
+        if actual_id < insert_id and node.next < insert_id:
+            actual_id = node.next
+        elif actual_id < insert_id < node.next:
+            pass
+        elif actual_id > insert_id and node.next > insert_id:
+            actual_id = node.previous
+        elif actual_id > insert_id > node.next:
+            pass
+        else:
+            clear_console()
+            print("Already this ID in the network! Please, changed the ID")
+            print_lines(50)
+            input("Press enter to continue...")
+            break
 
 
 def update():
