@@ -59,31 +59,28 @@ def menu(node):
         clear_console()
         print("Select an option:")
         print_lines(50)
-        print("1 - Join Network")
-        print("2 - Leave Network")
-        print("3 - Lookup Node")
-        print("4 - Update Node")
-        print("5 - Node Info")
-        print("0 - Exit Program")
+        print("1 - Create")
+        print("2 - Join")
+        print("3 - Leave")
+        print("4 - Node")
+        print("0 - Exit")
         print_lines(50)
         option = int(input("Option: "))
         if option == 1:
-            join(node)
+            create_network(node)
         elif option == 2:
-            leave()
+            join_network(node)
         elif option == 3:
-            lookup()
+            leave_network(node)
         elif option == 4:
-            update()
-        elif option == 5:
             node_info(node)
         elif option == 0:
-            exit_()
+            exit_program(node)
         else:
             invalid_option()
 
 
-def join(node):
+def create_network(node):
     node.previous = node.IP
     node.next = node.IP
     clear_console()
@@ -91,9 +88,15 @@ def join(node):
     print("Network Created!")
     print_lines(50)
     input("Press enter to continue...")
+    logging.debug(f"Network Created - Node IP: {node.IP}, NAME: {node.NAME}, PORT: {node.PORT}, ID: {node.ID}, "
+                  f"previous: {node.previous},")
 
 
-def leave():
+def join_network(node):
+    pass
+
+
+def leave_network(node):
     pass
 
 
@@ -118,11 +121,11 @@ def node_info(node):
     input("Press enter to continue...")
 
 
-def exit_():
+def exit_program(node):
     clear_console()
     print_lines(50)
     print("Exiting...")
-    leave()
+    leave_network(node)
     print_lines(50)
     input("Press enter to continue...")
     clear_console()
