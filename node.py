@@ -17,8 +17,8 @@ class Node:
     IP = None
     NAME = None
     ID = None
-    previous = None
-    next = None
+    previous = {"id": None, "ip": None}
+    next = {"id": None, "ip": None}
 
     def __init__(self, udp):
         self.SOCKET = udp
@@ -41,7 +41,7 @@ def listener(node):
         elif string_dict["codigo"] == 1:
             pass
         elif string_dict["codigo"] == 2:
-            lookup(node, string_dict["id_busca"])
+            lookup_control(node, string_dict)
         elif string_dict["codigo"] == 3:
             pass
         elif string_dict["codigo"] == 64:
@@ -81,15 +81,15 @@ def menu(node):
 
 
 def create_network(node):
-    node.previous = node.IP
-    node.next = node.IP
+    node.previous = {node.ID, node.IP}
+    node.next = {node.ID, node.IP}
     clear_console()
     print_lines(50)
     print("Network Created!")
     print_lines(50)
     input("Press enter to continue...")
     logging.debug(f"Network Created - Node IP: {node.IP}, NAME: {node.NAME}, PORT: {node.PORT}, ID: {node.ID}, "
-                  f"previous: {node.previous},")
+                  f"previous: {node.previous}, next: {node.next}")
 
 
 def join_network(node):
@@ -107,30 +107,40 @@ def join_network(node):
     msg_lookup_json = json.dumps(msg_lookup)
     msg_lookup_encoded = msg_lookup_json.encode("utf-8")
     node.SOCKET.sendto(msg_lookup_encoded, (ip_to_join, Node.PORT))
-    logging.debug(f"Lookup message -  {msg_lookup_encoded}")
+    logging.debug(f"Sent Lookup message - {msg_lookup_encoded}")
 
 
 def leave_network(node):
     pass
 
 
-def lookup(node, insert_id):
-    actual_id = node.ID
-    while True:
-        if actual_id < insert_id and node.next < insert_id:
-            actual_id = node.next
-        elif actual_id < insert_id < node.next:
+def lookup_control(node, dictionary):
+    request_id = dictionary["identificador"]
+    concurrent_id = node.ID
+
+    if request_id == concurrent_id:
+        # Error message, ambiguous ID
+        pass
+    elif request_id > concurrent_id:
+        if node.next.id < node.ID:
+            # Inset in the end
             pass
-        elif actual_id > insert_id and node.next > insert_id:
-            actual_id = node.previous
-        elif actual_id > insert_id > node.next:
+        elif node.next.id > request_id:
+            # Insert in the middle
             pass
         else:
-            clear_console()
-            print("Already this ID in the network! Please, changed the ID")
-            print_lines(50)
-            input("Press enter to continue...")
-            break
+            # Keep going forward
+            pass
+    elif request_id < concurrent_id:
+        if node.previous.id > node.ID:
+            # Insert in the beginning
+            pass
+        elif node.previous.id < request_id:
+            # Insert in the middle
+            pass
+        else:
+            # Keep going backwards
+            pass
 
 
 def update():
