@@ -31,6 +31,7 @@ class Node:
 def listener(node):
     orig = ("", Node.PORT)
     node.SOCKET.bind(orig)
+    logging.debug(f"Node {node.ID} listening on {node.IP}:{node.PORT}")
     while True:
         msg, client = node.SOCKET.recvfrom(1024)
         msg_decoded = msg.decode("utf-8")
@@ -41,7 +42,7 @@ def listener(node):
         elif string_dict["codigo"] == 1:
             pass
         elif string_dict["codigo"] == 2:
-            lookup_control(node, string_dict)
+            lookup_response(node, string_dict)
         elif string_dict["codigo"] == 3:
             pass
         elif string_dict["codigo"] == 64:
@@ -101,41 +102,61 @@ def join_network(node):
     msg_lookup = {
         "codigo": 2,
         "identificador": node.ID,
-        "ip_origem_busca": ip_to_join,
+        "ip_origem_busca": node.IP,
         "id_busca": node.ID
     }
     msg_lookup_json = json.dumps(msg_lookup)
     msg_lookup_encoded = msg_lookup_json.encode("utf-8")
-    node.SOCKET.sendto(msg_lookup_encoded, (ip_to_join, Node.PORT))
-    logging.debug(f"Sent Lookup message - {msg_lookup_encoded}")
+    logging.debug(f"Sent Lookup Request to {ip_to_join} - {msg_lookup_encoded}")
+    node.SOCKET.sendto(msg_lookup_encoded, (ip_to_join, node.PORT))
 
 
 def leave_network(node):
     pass
 
 
-def lookup_control(node, dictionary):
-    request_id = dictionary["identificador"]
+def lookup_response(node, request_dict):
+    logging.debug(f"Lookup Request Received - {request_dict}")
+    response_dict = {
+        "codigo": 66,
+        "id_busca": node.ID,
+        "id_origem": request_dict["identificador"],
+        "ip_origem": request_dict["ip_origem_busca"],
+        "id_antecessor": node.previous["id"],
+        "ip_antecessor": node.previous["ip"],
+        "id_sucessor": node.next["id"],
+        "ip_sucessor": node.next["ip"]
+    }
+    response_json = json.dumps(response_dict)
+    response_encoded = response_json.encode("utf-8")
+    logging.debug(f"Sent Lookup Response Message - {response_encoded}")
+    node.SOCKET.sendto(response_encoded, (request_dict["ip_origem_busca"], node.PORT))
+
+
+def lookup_control(node, request_dict):
+    request_id = request_dict["identificador"]
     concurrent_id = node.ID
+    next_id = node.next.id
+    previous_id = node.previous.id
 
     if request_id == concurrent_id:
         # Error message, ambiguous ID
         pass
     elif request_id > concurrent_id:
-        if node.next.id < node.ID:
+        if next_id <= concurrent_id:
             # Inset in the end
             pass
-        elif node.next.id > request_id:
+        elif next_id > request_id:
             # Insert in the middle
             pass
         else:
             # Keep going forward
             pass
     elif request_id < concurrent_id:
-        if node.previous.id > node.ID:
+        if previous_id >= concurrent_id:
             # Insert in the beginning
             pass
-        elif node.previous.id < request_id:
+        elif previous_id < request_id:
             # Insert in the middle
             pass
         else:
@@ -168,6 +189,7 @@ def exit_program(node):
     print_lines(50)
     input("Press enter to continue...")
     clear_console()
+    logging.debug(f"Node {node.ID} exited")
     exit(0)
 
 
