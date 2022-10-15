@@ -1,7 +1,7 @@
 #!/usr/sbin/python3
 
 import socket
-import _thread
+import multiprocessing as mp
 import os
 import sys
 import json
@@ -29,7 +29,7 @@ class Node:
 
 
 def listener(node):
-    orig = ("", Node.PORT)
+    orig = ("", node.PORT)
     node.SOCKET.bind(orig)
     logging.debug(f"Node {node.ID} listening on {node.IP}:{node.PORT}")
     while True:
@@ -55,7 +55,7 @@ def listener(node):
             pass
 
 
-def menu(node):
+def menu(node, listener_thread):
     while True:
         clear_console()
         print("Select an option:")
@@ -76,7 +76,7 @@ def menu(node):
         elif option == 4:
             node_info(node)
         elif option == 0:
-            exit_program(node)
+            exit_program(node, listener_thread)
         else:
             invalid_option()
 
@@ -116,7 +116,6 @@ def leave_network(node):
 
 
 def lookup_response(node, request_dict):
-    logging.debug(f"Lookup Request Received - {request_dict}")
     response_dict = {
         "codigo": 66,
         "id_busca": node.ID,
@@ -136,8 +135,8 @@ def lookup_response(node, request_dict):
 def lookup_control(node, request_dict):
     request_id = request_dict["identificador"]
     concurrent_id = node.ID
-    next_id = node.next.id
-    previous_id = node.previous.id
+    next_id = node.next["id"]
+    previous_id = node.previous["id"]
 
     if request_id == concurrent_id:
         # Error message, ambiguous ID
@@ -181,7 +180,7 @@ def node_info(node):
     input("Press enter to continue...")
 
 
-def exit_program(node):
+def exit_program(node, listener_thread):
     clear_console()
     print_lines(50)
     print("Exiting...")
@@ -190,7 +189,8 @@ def exit_program(node):
     input("Press enter to continue...")
     clear_console()
     logging.debug(f"Node {node.ID} exited")
-    exit(0)
+    listener_thread.terminate()
+    exit(1)
 
 
 def clear_console():
@@ -215,8 +215,9 @@ def main():
     node = Node(udp)
     logging.debug(f"Node IP: {node.IP}, NAME: {node.NAME}, PORT: {node.PORT}, ID: {node.ID}, previous: {node.previous},"
                   f" next: {node.next}")
-    _thread.start_new_thread(listener, (node,))
-    menu(node)
+    listener_thread = mp.Process(target=listener, args=(node,))
+    listener_thread.start()
+    menu(node, listener_thread)
 
 
 def validate_ip():
