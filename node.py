@@ -1,7 +1,7 @@
 #!/usr/sbin/python3
 
 import socket
-import multiprocessing as mp
+import _thread
 import os
 import sys
 import json
@@ -25,8 +25,7 @@ class P2P:
     def __init__(self, ip, name):
         self.SOCKET = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.NODE = Node(ip, name)
-        self.listener_process = mp.Process(target=self.listener)
-        self.listener_process.start()
+        self.LISTENER = _thread.start_new_thread(self.listener, ())
         self.menu()
 
     def listener(self):
@@ -51,7 +50,7 @@ class P2P:
             elif string_dict["codigo"] == 65:
                 pass
             elif string_dict["codigo"] == 66:
-                pass
+                self.lookup_control(string_dict)
             elif string_dict["codigo"] == 67:
                 pass
 
@@ -96,7 +95,13 @@ class P2P:
         print_lines(50)
         print("Enter the IP of the node you want to join")
         print_lines(50)
-        ip_to_join = input("IP: ")
+        ip = input("IP: ")
+        self.lookup_request(ip)
+
+    def leave_network(self):
+        pass
+
+    def lookup_request(self, ip):
         msg_lookup = {
             "codigo": 2,
             "identificador": self.NODE.ID,
@@ -105,11 +110,8 @@ class P2P:
         }
         msg_lookup_json = json.dumps(msg_lookup)
         msg_lookup_encoded = msg_lookup_json.encode("utf-8")
-        logging.debug(f"Sent Lookup Request to {ip_to_join} - {msg_lookup_encoded}")
-        self.SOCKET.sendto(msg_lookup_encoded, (ip_to_join, self.NODE.PORT))
-
-    def leave_network(self):
-        pass
+        logging.debug(f"Sent Lookup Request to {ip} - {msg_lookup_encoded}")
+        self.SOCKET.sendto(msg_lookup_encoded, (ip, self.NODE.PORT))
 
     def lookup_response(self, request_dict):
         response_dict = {
@@ -135,7 +137,7 @@ class P2P:
 
         if request_id == concurrent_id:
             # Error message, ambiguous ID
-            pass
+            ambiguous_id_error()
         elif request_id > concurrent_id:
             if next_id <= concurrent_id:
                 # Inset in the end
@@ -145,6 +147,7 @@ class P2P:
                 pass
             else:
                 # Keep going forward
+                self.lookup_request(self.NODE.next["ip"])
                 pass
         elif request_id < concurrent_id:
             if previous_id >= concurrent_id:
@@ -155,6 +158,7 @@ class P2P:
                 pass
             else:
                 # Keep going backwards
+                self.lookup_request(self.NODE.previous["ip"])
                 pass
 
     def update(self):
@@ -181,8 +185,7 @@ class P2P:
         input("Press enter to continue...")
         clear_console()
         logging.debug(f"Node {self.NODE.ID} exited")
-        self.listener_process.terminate()
-        exit(1)
+        exit(0)
 
 
 def clear_console():
@@ -201,11 +204,21 @@ def invalid_option():
     input("Press enter to continue...")
 
 
+def ambiguous_id_error():
+    clear_console()
+    print_lines(50)
+    print("Error: Ambiguous ID!")
+    print_lines(50)
+    input("Press enter to continue...")
+    clear_console()
+    exit(0)
+
+
 def main():
     if len(sys.argv) != 3:
         clear_console()
         print("Invalid arguments! Usage: python3 node.py <IP> <NAME>")
-        exit(1)
+        exit(0)
     P2P(sys.argv[1], sys.argv[2])
 
 
