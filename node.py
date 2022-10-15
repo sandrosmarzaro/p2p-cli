@@ -139,27 +139,31 @@ class P2P:
             # Error message, ambiguous ID
             ambiguous_id_error()
         elif request_id > concurrent_id:
-            if next_id <= concurrent_id:
-                # Inset in the end
-                pass
-            elif next_id > request_id:
-                # Insert in the middle
-                pass
+            # Inset in the end              Insert in the middle
+            if next_id <= concurrent_id or next_id > request_id:
+                self.join_request(self.NODE.IP)
             else:
                 # Keep going forward
                 self.lookup_request(self.NODE.next["ip"])
-                pass
         elif request_id < concurrent_id:
-            if previous_id >= concurrent_id:
-                # Insert in the beginning
-                pass
-            elif previous_id < request_id:
-                # Insert in the middle
-                pass
+            # Insert in the beginning           Insert in the middle
+            if previous_id >= concurrent_id or previous_id < request_id:
+                self.join_request(self.NODE.IP)
             else:
                 # Keep going backwards
                 self.lookup_request(self.NODE.previous["ip"])
                 pass
+
+    def join_request(self, ip):
+        string_dict = {
+            "codigo": 0,
+            "id": self.NODE.ID,
+            "ip": self.NODE.IP
+        }
+        json_dict = json.dumps(string_dict)
+        encoded_json = json_dict.encode("utf-8")
+        logging.debug(f"Sent Join Request Message to {ip} - {encoded_json}")
+        self.SOCKET.sendto(encoded_json, (ip, self.NODE.PORT))
 
     def update(self):
         pass
