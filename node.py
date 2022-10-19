@@ -42,7 +42,7 @@ class P2P:
             elif string_dict["codigo"] == 1:
                 pass
             elif string_dict["codigo"] == 2:
-                self.lookup_response(string_dict)
+                self.lookup_control(string_dict)
             elif string_dict["codigo"] == 3:
                 pass
             elif string_dict["codigo"] == 64:
@@ -50,7 +50,7 @@ class P2P:
             elif string_dict["codigo"] == 65:
                 pass
             elif string_dict["codigo"] == 66:
-                self.lookup_control(string_dict)
+                pass
             elif string_dict["codigo"] == 67:
                 pass
 
@@ -119,8 +119,6 @@ class P2P:
             "id_busca": self.NODE.ID,
             "id_origem": request_dict["identificador"],
             "ip_origem": request_dict["ip_origem_busca"],
-            "id_antecessor": self.NODE.previous["id"],
-            "ip_antecessor": self.NODE.previous["ip"],
             "id_sucessor": self.NODE.next["id"],
             "ip_sucessor": self.NODE.next["ip"]
         }
@@ -135,24 +133,37 @@ class P2P:
         next_id = self.NODE.next["id"]
         previous_id = self.NODE.previous["id"]
 
+        # Error message, ambiguous ID
         if request_id == concurrent_id:
-            # Error message, ambiguous ID
             ambiguous_id_error()
-        elif request_id > concurrent_id:
-            # Inset in the end              Insert in the middle
-            if next_id <= concurrent_id or next_id > request_id:
-                self.join_request(self.NODE.IP)
-            else:
-                # Keep going forward
-                self.lookup_request(self.NODE.next["ip"])
-        elif request_id < concurrent_id:
-            # Insert in the beginning           Insert in the middle
-            if previous_id >= concurrent_id or previous_id < request_id:
-                self.join_request(self.NODE.IP)
-            else:
-                # Keep going backwards
-                self.lookup_request(self.NODE.previous["ip"])
+        # Only one node in the network
+        elif next_id == previous_id:
+            pass
+        # Cause the Node is the first in the network
+        elif previous_id > concurrent_id:
+            # Request ID is the largest ID in the network
+            if request_id > previous_id:
                 pass
+            # Request ID is the smallest ID in the network
+            elif request_id < concurrent_id:
+                pass
+        # Cause the Node is the last in the network
+        elif next_id < concurrent_id:
+            # Request ID is the largest ID in the network
+            if request_id > concurrent_id:
+                pass
+            # Request ID is the smallest ID in the network
+            elif request_id < next_id:
+                pass
+        # Cause the Node is in the middle of the network
+        elif previous_id < concurrent_id < next_id:
+            # Request ID is smaller than the Node ID and bigger than the previous Node ID
+            if concurrent_id > request_id > previous_id:
+                pass
+            # Request ID is bigger than the Node ID and smaller than the next Node ID
+            elif concurrent_id < request_id < next_id:
+                pass
+            # Else continue the search in the network
 
     def join_request(self, ip):
         string_dict = {
