@@ -38,7 +38,7 @@ class P2P:
             logging.debug(f"Message received: {msg_decoded}")
             string_dict = json.loads(msg_decoded)
             if string_dict["codigo"] == 0:
-                pass
+                self.join_response(string_dict)
             elif string_dict["codigo"] == 1:
                 pass
             elif string_dict["codigo"] == 2:
@@ -46,11 +46,11 @@ class P2P:
             elif string_dict["codigo"] == 3:
                 pass
             elif string_dict["codigo"] == 64:
-                pass
+                self.update_request(string_dict)
             elif string_dict["codigo"] == 65:
                 pass
             elif string_dict["codigo"] == 66:
-                pass
+                self.join_request(string_dict)
             elif string_dict["codigo"] == 67:
                 pass
 
@@ -138,7 +138,7 @@ class P2P:
             ambiguous_id_error()
         # Only one node in the network
         elif next_id == previous_id:
-            pass
+            self.lookup_response(request_dict)
         # Cause the Node is the first in the network
         elif previous_id > concurrent_id:
             # Request ID is the largest ID in the network
@@ -165,18 +165,33 @@ class P2P:
                 pass
             # Else continue the search in the network
 
-    def join_request(self, ip):
+    def join_request(self, request_dict):
         string_dict = {
             "codigo": 0,
-            "id": self.NODE.ID,
-            "ip": self.NODE.IP
+            "id": request_dict["id_origem"],
+            "ip": request_dict["ip_origem"]
         }
         json_dict = json.dumps(string_dict)
         encoded_json = json_dict.encode("utf-8")
+        ip = request_dict["ip_sucessor"]
         logging.debug(f"Sent Join Request Message to {ip} - {encoded_json}")
         self.SOCKET.sendto(encoded_json, (ip, self.NODE.PORT))
 
-    def update(self):
+    def join_response(self, request_dict):
+        response_dict = {
+            "codigo": 64,
+            "id_sucessor": self.NODE.next["id"],
+            "ip_sucessor": self.NODE.next["ip"],
+            "id_antecessor": self.NODE.previous["id"],
+            "ip_antecessor": self.NODE.previous["ip"]
+        }
+        json_dict = json.dumps(response_dict)
+        encoded_json = json_dict.encode("utf-8")
+        ip = request_dict["ip"]
+        logging.debug(f"Sent Join Response Message to {ip} - {encoded_json}")
+        self.SOCKET.sendto(encoded_json, (ip, self.NODE.PORT))
+
+    def update_request(self, request_dict):
         pass
 
     def node_info(self):
