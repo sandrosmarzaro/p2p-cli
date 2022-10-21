@@ -12,19 +12,25 @@ logging.basicConfig(filename='node.log', level=logging.DEBUG,
 
 
 class Node:
-    def __init__(self, ip, name):
+    def __init__(self, ip, name, id_provided=None):
         self.PORT = 12345
         self.IP = ip
         self.NAME = name
-        self.ID = hash(self.IP + self.NAME)
+        self.ID = self.generate_id(id_provided)
         self.previous = {}
         self.next = {}
 
+    def generate_id(self, id_provided):
+        if id_provided is None:
+            return hash(self.NAME + self.IP)
+        else:
+            return id_provided
+
 
 class P2P:
-    def __init__(self, ip, name):
+    def __init__(self, ip, name, id_provided=None):
         self.SOCKET = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.NODE = Node(ip, name)
+        self.NODE = Node(ip, name, id_provided)
         self.LISTENER = _thread.start_new_thread(self.listener, ())
         self.menu()
 
@@ -245,11 +251,17 @@ def ambiguous_id_error():
 
 
 def main():
-    if len(sys.argv) != 3:
+    if len(sys.argv) == 3:
+        P2P(sys.argv[1], sys.argv[2])
+    elif len(sys.argv) == 4:
+        P2P(sys.argv[1], sys.argv[2], sys.argv[3])
+    else:
         clear_console()
-        print("Invalid arguments! Usage: python3 node.py <IP> <NAME>")
+        print_lines(50)
+        print("Invalid arguments! Usage: python3 node.py <IP> <NAME> or <IP> <NAME> <ID>")
+        print_lines(50)
+        input("Press enter to continue...")
         exit(0)
-    P2P(sys.argv[1], sys.argv[2])
 
 
 if __name__ == "__main__":
