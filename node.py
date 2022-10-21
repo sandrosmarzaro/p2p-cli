@@ -56,7 +56,7 @@ class P2P:
             elif string_dict["codigo"] == 65:
                 pass
             elif string_dict["codigo"] == 66:
-                self.join_request(string_dict)
+                self.join_request(string_dict, client[0])
             elif string_dict["codigo"] == 67:
                 pass
 
@@ -153,6 +153,9 @@ class P2P:
             # Request ID is the smallest ID in the network
             elif request_id < concurrent_id:
                 pass
+            # Request ID is between the first and the next of first in the network
+            elif concurrent_id < request_id < next_id:
+                pass
         # Cause the Node is the last in the network
         elif next_id < concurrent_id:
             # Request ID is the largest ID in the network
@@ -169,9 +172,9 @@ class P2P:
             # Request ID is bigger than the Node ID and smaller than the next Node ID
             elif concurrent_id < request_id < next_id:
                 pass
-            # Else continue the search in the network
+        # Else continue the search in the network
 
-    def join_request(self, request_dict):
+    def join_request(self, request_dict, ip):
         string_dict = {
             "codigo": 0,
             "id": request_dict["id_origem"],
@@ -179,7 +182,6 @@ class P2P:
         }
         json_dict = json.dumps(string_dict)
         encoded_json = json_dict.encode("utf-8")
-        ip = request_dict["ip_sucessor"]
         logging.debug(f"Sent Join Request Message to {ip} - {encoded_json}")
         self.SOCKET.sendto(encoded_json, (ip, self.NODE.PORT))
 
