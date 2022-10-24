@@ -50,7 +50,7 @@ class P2P:
             elif string_dict["codigo"] == 2:
                 self.lookup_control(string_dict)
             elif string_dict["codigo"] == 3:
-                pass
+                self.update_control(string_dict, client[0])
             elif string_dict["codigo"] == 64:
                 self.update_request(string_dict)
             elif string_dict["codigo"] == 65:
@@ -58,7 +58,7 @@ class P2P:
             elif string_dict["codigo"] == 66:
                 self.join_request(string_dict, client[0])
             elif string_dict["codigo"] == 67:
-                pass
+                self.update_verification(string_dict, client[0])
 
     def menu(self):
         while True:
@@ -188,7 +188,58 @@ class P2P:
         self.SOCKET.sendto(encoded_json, (ip, self.NODE.PORT))
 
     def update_request(self, request_dict):
-        pass
+        self.NODE.previous.update({"id": request_dict["id_antecessor"], "ip": request_dict["ip_antecessor"]})
+        self.NODE.next.update({"id": request_dict["id_sucessor"], "ip": request_dict["ip_sucessor"]})
+        logging.debug(f"Updated Node {self.NODE.IP} - Previous: {self.NODE.previous} and next: {self.NODE.next}")
+        self.update_previous_request()
+        self.update_next_request()
+
+    def update_previous_request(self):
+        previous_dict = {
+            "codigo": 3,
+            "identificador": self.NODE.ID,
+            "id_novo_antecessor": self.NODE.ID,
+            "ip_novo_antecessor": self.NODE.ID
+        }
+        json_dict = json.dumps(previous_dict)
+        encoded_json = json_dict.encode("utf-8")
+        logging.debug(f"Sent Update Previous Request Message to {self.NODE.previous} - {encoded_json}")
+        self.SOCKET.sendto(encoded_json, (self.NODE.previous["ip"], self.NODE.PORT))
+
+    def update_next_request(self):
+        next_dict = {
+            "codigo": 3,
+            "identificador": self.NODE.ID,
+            "id_novo_sucessor": self.NODE.ID,
+            "ip_novo_sucessor": self.NODE.ID
+        }
+        json_dict = json.dumps(next_dict)
+        encoded_json = json_dict.encode("utf-8")
+        logging.debug(f"Sent Update Next Request Message to {self.NODE.next} - {encoded_json}")
+        self.SOCKET.sendto(encoded_json, (self.NODE.next["ip"], self.NODE.PORT))
+
+    def update_control(self, request_dict, ip_to_send):
+        if "id_novo_antecessor" in request_dict:
+            self.NODE.previous.update({"id": request_dict["id_novo_antecessor"],
+                                       "ip": request_dict["ip_novo_antecessor"]})
+            logging.debug(f"Updated Node {self.NODE.IP} - Previous: {self.NODE.previous}")
+        elif "id_novo_sucessor" in request_dict:
+            self.NODE.next.update({"id": request_dict["id_novo_sucessor"], "ip": request_dict["ip_novo_sucessor"]})
+            logging.debug(f"Updated Node {self.NODE.IP} - Next: {self.NODE.next}")
+        self.update_response(ip_to_send)
+
+    def update_response(self, ip_to_send):
+        response_dict = {
+            "codigo": 67,
+            "id_origem_mensagem": self.NODE.ID,
+        }
+        json_dict = json.dumps(response_dict)
+        encoded_json = json_dict.encode("utf-8")
+        logging.debug(f"Sent Update Response Message to {ip_to_send} - {encoded_json}")
+        self.SOCKET.sendto(encoded_json, (ip_to_send, self.NODE.PORT))
+
+    def update_verification(self, request_dict, ip_to_send):
+        logging.debug(f"Received Update Verification Message in {self.NODE.ID} from {ip_to_send} - {request_dict}")
 
     def node_info(self):
         clear_console()
