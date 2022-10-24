@@ -30,6 +30,17 @@ share/python-wheels/
 *.egg
 MANIFEST
 
+# IDEs and editors
+*.project
+*.pydevproject
+*.suo
+*.tmproj
+*.tmTheme
+*.sublime-workspace
+*.sublime-project
+*.idea
+*.vscode
+
 # PyInstaller
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
