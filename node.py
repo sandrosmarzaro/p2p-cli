@@ -107,14 +107,16 @@ class P2P:
     def leave_network(self):
         pass
 
-    def lookup_request(self, ip_to_send, original_ip=None):
+    def lookup_request(self, ip_to_send, original_ip=None, original_id=None):
         if original_ip is None:
             original_ip = self.NODE.IP
+        if original_id is None:
+            original_id = self.NODE.ID
         msg_lookup = {
             "codigo": 2,
             "identificador": self.NODE.ID,
             "ip_origem_busca": original_ip,
-            "id_busca": self.NODE.ID
+            "id_busca": original_id
         }
         msg_lookup_json = json.dumps(msg_lookup)
         msg_lookup_encoded = msg_lookup_json.encode("utf-8")
@@ -136,7 +138,7 @@ class P2P:
         self.SOCKET.sendto(response_encoded, (request_dict["ip_origem_busca"], self.NODE.PORT))
 
     def lookup_control(self, request_dict):
-        request_id = request_dict["identificador"]
+        request_id = request_dict["id_busca"]
         current_id = self.NODE.ID
         next_id = self.NODE.next["id"]
         previous_id = self.NODE.previous["id"]
@@ -154,7 +156,7 @@ class P2P:
                 self.lookup_response(request_dict)
             # Continue the search in the network
             else:
-                self.lookup_request(self.NODE.next["ip"], request_dict["ip_origem_busca"])
+                self.lookup_request(self.NODE.next["ip"], request_dict["ip_origem_busca"], request_dict["id_busca"])
         # Cause the Node is in the middle of the network
         else:
             # Request ID is between the current and the previous node
@@ -162,7 +164,7 @@ class P2P:
                 self.lookup_response(request_dict)
             # Continue the search in the network
             else:
-                self.lookup_request(self.NODE.next["ip"], request_dict["ip_origem_busca"])
+                self.lookup_request(self.NODE.next["ip"], request_dict["ip_origem_busca"], request_dict["id_busca"])
 
     def join_request(self, request_dict, ip):
         string_dict = {
@@ -178,7 +180,7 @@ class P2P:
         response_dict = {
             "codigo": 64,
             "id_sucessor": self.NODE.ID,
-            "ip_sucessor": self.NODE.ID,
+            "ip_sucessor": self.NODE.IP,
             "id_antecessor": self.NODE.previous["id"],
             "ip_antecessor": self.NODE.previous["ip"]
         }
@@ -198,8 +200,8 @@ class P2P:
         previous_dict = {
             "codigo": 3,
             "identificador": self.NODE.ID,
-            "id_novo_antecessor": self.NODE.ID,
-            "ip_novo_antecessor": self.NODE.ID
+            "id_novo_sucessor": self.NODE.ID,
+            "ip_novo_sucessor": self.NODE.IP
         }
         json_dict = json.dumps(previous_dict)
         encoded_json = json_dict.encode("utf-8")
@@ -210,8 +212,8 @@ class P2P:
         next_dict = {
             "codigo": 3,
             "identificador": self.NODE.ID,
-            "id_novo_sucessor": self.NODE.ID,
-            "ip_novo_sucessor": self.NODE.ID
+            "id_novo_antecessor": self.NODE.ID,
+            "ip_novo_antecessor": self.NODE.IP
         }
         json_dict = json.dumps(next_dict)
         encoded_json = json_dict.encode("utf-8")
