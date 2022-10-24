@@ -44,7 +44,7 @@ class P2P:
             logging.debug(f"Message received: {msg_decoded}")
             string_dict = json.loads(msg_decoded)
             if string_dict["codigo"] == 0:
-                self.join_response(string_dict)
+                self.join_response(client[0])
             elif string_dict["codigo"] == 1:
                 pass
             elif string_dict["codigo"] == 2:
@@ -107,17 +107,19 @@ class P2P:
     def leave_network(self):
         pass
 
-    def lookup_request(self, ip):
+    def lookup_request(self, ip_to_send, original_ip=None):
+        if original_ip is None:
+            original_ip = self.NODE.IP
         msg_lookup = {
             "codigo": 2,
             "identificador": self.NODE.ID,
-            "ip_origem_busca": self.NODE.IP,
+            "ip_origem_busca": original_ip,
             "id_busca": self.NODE.ID
         }
         msg_lookup_json = json.dumps(msg_lookup)
         msg_lookup_encoded = msg_lookup_json.encode("utf-8")
-        logging.debug(f"Sent Lookup Request to {ip} - {msg_lookup_encoded}")
-        self.SOCKET.sendto(msg_lookup_encoded, (ip, self.NODE.PORT))
+        logging.debug(f"Sent Lookup Request to {ip_to_send} - {msg_lookup_encoded}")
+        self.SOCKET.sendto(msg_lookup_encoded, (ip_to_send, self.NODE.PORT))
 
     def lookup_response(self, request_dict):
         response_dict = {
@@ -135,67 +137,53 @@ class P2P:
 
     def lookup_control(self, request_dict):
         request_id = request_dict["identificador"]
-        concurrent_id = self.NODE.ID
+        current_id = self.NODE.ID
         next_id = self.NODE.next["id"]
         previous_id = self.NODE.previous["id"]
 
         # Error message, ambiguous ID
-        if request_id == concurrent_id:
+        if request_id == current_id:
             ambiguous_id_error()
         # Only one node in the network
         elif next_id == previous_id:
             self.lookup_response(request_dict)
         # Cause the Node is the first in the network
-        elif previous_id > concurrent_id:
-            # Request ID is the largest ID in the network
-            if request_id > previous_id:
-                pass
-            # Request ID is the smallest ID in the network
-            elif request_id < concurrent_id:
-                pass
-            # Request ID is between the first and the next of first in the network
-            elif concurrent_id < request_id < next_id:
-                pass
-        # Cause the Node is the last in the network
-        elif next_id < concurrent_id:
-            # Request ID is the largest ID in the network
-            if request_id > concurrent_id:
-                pass
-            # Request ID is the smallest ID in the network
-            elif request_id < next_id:
-                pass
+        elif current_id < previous_id:
+            # Request ID is the smallest or biggest ID in the network
+            if request_id < current_id or request_id > previous_id:
+                self.lookup_response(request_dict)
+            # Continue the search in the network
+            else:
+                self.lookup_request(self.NODE.next["ip"], request_dict["ip_origem_busca"])
         # Cause the Node is in the middle of the network
-        elif previous_id < concurrent_id < next_id:
-            # Request ID is smaller than the Node ID and bigger than the previous Node ID
-            if concurrent_id > request_id > previous_id:
-                pass
-            # Request ID is bigger than the Node ID and smaller than the next Node ID
-            elif concurrent_id < request_id < next_id:
-                pass
-        # Else continue the search in the network
+        else:
+            # Request ID is between the current and the previous node
+            if current_id > request_id > previous_id:
+                self.lookup_response(request_dict)
+            # Continue the search in the network
+            else:
+                self.lookup_request(self.NODE.next["ip"], request_dict["ip_origem_busca"])
 
     def join_request(self, request_dict, ip):
         string_dict = {
             "codigo": 0,
             "id": request_dict["id_origem"],
-            "ip": request_dict["ip_origem"]
         }
         json_dict = json.dumps(string_dict)
         encoded_json = json_dict.encode("utf-8")
         logging.debug(f"Sent Join Request Message to {ip} - {encoded_json}")
         self.SOCKET.sendto(encoded_json, (ip, self.NODE.PORT))
 
-    def join_response(self, request_dict):
+    def join_response(self, ip):
         response_dict = {
             "codigo": 64,
-            "id_sucessor": self.NODE.next["id"],
-            "ip_sucessor": self.NODE.next["ip"],
+            "id_sucessor": self.NODE.ID,
+            "ip_sucessor": self.NODE.ID,
             "id_antecessor": self.NODE.previous["id"],
             "ip_antecessor": self.NODE.previous["ip"]
         }
         json_dict = json.dumps(response_dict)
         encoded_json = json_dict.encode("utf-8")
-        ip = request_dict["ip"]
         logging.debug(f"Sent Join Response Message to {ip} - {encoded_json}")
         self.SOCKET.sendto(encoded_json, (ip, self.NODE.PORT))
 
