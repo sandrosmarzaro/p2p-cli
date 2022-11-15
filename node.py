@@ -46,7 +46,7 @@ class P2P:
             if string_dict["codigo"] == 0:
                 self.join_response(client[0])
             elif string_dict["codigo"] == 1:
-                pass
+                self.leave_response(string_dict, client)
             elif string_dict["codigo"] == 2:
                 self.lookup_control(string_dict)
             elif string_dict["codigo"] == 3:
@@ -54,7 +54,7 @@ class P2P:
             elif string_dict["codigo"] == 64:
                 self.update_request(string_dict)
             elif string_dict["codigo"] == 65:
-                pass
+                self.leave_verification(string_dict, client[0])
             elif string_dict["codigo"] == 66:
                 self.join_request(string_dict, client[0])
             elif string_dict["codigo"] == 67:
@@ -105,7 +105,60 @@ class P2P:
         self.lookup_request(ip)
 
     def leave_network(self):
-        pass
+        if self.NODE.previous["id"] != self.NODE.ID != self.NODE.next["id"]:
+            self.leave_request()
+        self.NODE.previous.update({"id": None, "ip": None})
+        self.NODE.next.update({"id": None, "ip": None})
+        clear_console()
+        print_lines(50)
+        print("Network Left!")
+        print_lines(50)
+        input("Press enter to continue...")
+        logging.debug(f"Network Left - Node IP: {self.NODE.IP}, NAME: {self.NODE.NAME}, PORT: {self.NODE.PORT}, "
+                      f"ID: {self.NODE.ID}, previous: {self.NODE.previous}, next: {self.NODE.next}")
+
+    def leave_request(self):
+        string_dict = {
+            "codigo": 1,
+            "identificador": self.NODE.ID,
+            "id_sucessor": self.NODE.next["id"],
+            "ip_sucessor": self.NODE.next["ip"],
+            "id_antecessor": self.NODE.previous["id"],
+            "ip_antecessor": self.NODE.previous["ip"]
+        }
+        json_dict = json.dumps(string_dict)
+        encoded_json = json_dict.encode("utf-8")
+        logging.debug(f"Sent Leave Request Message to successor {self.NODE.next['ip']} - {encoded_json}")
+        self.SOCKET.sendto(encoded_json, (self.NODE.next["ip"], self.NODE.PORT))
+        logging.debug(f"Sent Leave Request Message to previous {self.NODE.previous['ip']} - {encoded_json}")
+        self.SOCKET.sendto(encoded_json, (self.NODE.previous["ip"], self.NODE.PORT))
+
+    def leave_response(self, string_dict, client):
+        if string_dict["id_antecessor"] == self.NODE.ID:
+            self.NODE.next.update({
+                "id": string_dict["id_sucessor"],
+                "ip": string_dict["ip_sucessor"]
+            })
+        if string_dict["id_sucessor"] == self.NODE.ID:
+            self.NODE.previous.update({
+                "id": string_dict["id_antecessor"],
+                "ip": string_dict["ip_antecessor"]
+            })
+        logging.debug(f"Update Node IP: {self.NODE.IP}, NAME: {self.NODE.NAME}, PORT: {self.NODE.PORT}, "
+                      f"ID: {self.NODE.ID}, previous: {self.NODE.previous}, next: {self.NODE.next}")
+        response_dict = {
+            "codigo": 65,
+            "identificador": self.NODE.ID
+        }
+        json_dict = json.dumps(response_dict)
+        encoded_json = json_dict.encode("utf-8")
+        logging.debug(f"Sent Leave Response Message to {client} - {encoded_json}")
+        self.SOCKET.sendto(encoded_json, client)
+
+    def leave_verification(self, string_dict, client):
+        logging.debug(f"Leave Validation Message received in Node IP {self.NODE.IP}, NAME: {self.NODE.NAME}, "
+                      f"PORT: {self.NODE.PORT}, previous: {self.NODE.previous}, next: {self.NODE.next} "
+                      f"from {client} - {string_dict}")
 
     def lookup_request(self, ip_to_send, original_ip=None, original_id=None):
         if original_ip is None:
@@ -256,10 +309,11 @@ class P2P:
         input("Press enter to continue...")
 
     def exit_program(self):
+        if self.NODE.previous or self.NODE.next != {}:
+            self.leave_network()
         clear_console()
         print_lines(50)
         print("Exiting...")
-        self.leave_network()
         print_lines(50)
         input("Press enter to continue...")
         clear_console()
