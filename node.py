@@ -200,7 +200,7 @@ class P2P:
         if request_id == current_id:
             ambiguous_id_error()
         # Only one node in the network
-        elif next_id == previous_id:
+        elif next_id == current_id == previous_id:
             self.lookup_response(request_dict)
         # Cause the Node is the first in the network
         elif current_id < previous_id:
